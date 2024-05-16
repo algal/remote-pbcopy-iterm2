@@ -27,14 +27,14 @@ def screen_esc(b64: str) -> str:
     return "".join(out)
 
 
-def is_tmux_cc(pid: str) -> bool:
+def is_client_control_mode() -> bool:
     try:
-        out = subprocess.check_output(["ps", "-p", pid, "-o", "command="])
+        out = subprocess.check_output(["tmux","display-message","-p","#{client_control_mode}"])
         out = out.rstrip(b"\n\r")
-        for arg in out.split(b" "):
-            if arg == b"-CC":
-                return True
-        return False
+        if out == b"1":
+            return True
+        else:
+            return False
     except subprocess.CalledProcessError:
         return False
 
@@ -42,8 +42,7 @@ def is_tmux_cc(pid: str) -> bool:
 def choose_esc() -> Callable[[str], str]:
     env = os.getenv("TMUX")
     if env:
-        envs = env.split(",")
-        if len(envs) > 1 and is_tmux_cc(envs[1]):
+        if is_client_control_mode():
             return normal_esc
         else:
             return tmux_esc
